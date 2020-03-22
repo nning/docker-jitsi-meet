@@ -41,6 +41,13 @@ services:
             meet.jitsi:
                 aliases:
                     - ${XMPP_DOMAIN}
+        logging:
+            driver: fluentd
+            options:
+                fluentd-address: fluentd:24224
+                tag: jitsi.web
+        depends_on:
+            - fluentd
 
     # XMPP server
     prosody:
@@ -104,6 +111,13 @@ services:
             meet.jitsi:
                 aliases:
                     - ${XMPP_SERVER}
+        logging:
+            driver: fluentd
+            options:
+                fluentd-address: fluentd:24224
+                tag: jitsi.prosody
+        depends_on:
+            - fluentd
 
     # Focus component
     jicofo:
@@ -129,6 +143,13 @@ services:
             - prosody
         networks:
             meet.jitsi:
+        logging:
+            driver: fluentd
+            options:
+                fluentd-address: fluentd:24224
+                tag: jitsi.jicofo
+        depends_on:
+            - fluentd
 
     # Video bridge
     jvb:
@@ -154,6 +175,43 @@ services:
             - TZ
         depends_on:
             - prosody
+        networks:
+            meet.jitsi:
+        logging:
+            driver: fluentd
+            options:
+                fluentd-address: fluentd:24224
+                tag: jitsi.jvb
+        depends_on:
+            - fluentd
+
+    fluentd:
+        build: ./fluentd
+        volumes:
+            - ./fluentd/conf:/fluentd/etc
+        depends_on:
+            - elasticsearch
+        ports:
+            - 24224:24224
+            - 24224:24224/udp
+        networks:
+            meet.jitsi:
+
+    elasticsearch:
+        image: elasticsearch:7.6.1
+        ports:
+            - 9200:9200
+        environment:
+            discovery.type: single-node
+        networks:
+            meet.jitsi:
+
+    kibana:
+        image: kibana:7.6.1
+        depends_on:
+            - elasticsearch
+        ports:
+            - 5601:5601
         networks:
             meet.jitsi:
 
